@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skillshield"
+version = "1.0.0"
+description = "Security scanner for AI agent skills. Detects prompt injection, data exfiltration, and malicious payloads before you install. Zero dependencies."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Linda Oraegbunam" }]
+keywords = [
+    "ai-security", "prompt-injection", "agent-skills", "mcp", "claude",
+    "llm-security", "skill-scanner", "ai-safety", "red-team", "clawhavoc",
+    "anthropic", "openai", "codex", "agent-security", "supply-chain",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "black>=24.0.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+skillguard = "skillguard.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/obielin/skillguard"
+"Bug Tracker" = "https://github.com/obielin/skillguard/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
