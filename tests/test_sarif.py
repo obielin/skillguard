@@ -6,12 +6,10 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from skillguard import SkillScanner
-from skillguard.models import BatchScanReport, SkillScanResult
+from skillguard.models import SkillScanResult
 from skillguard.sarif import report_to_sarif, results_to_sarif, to_sarif_string
 
 # ── Fixture skill content ──────────────────────────────────────
