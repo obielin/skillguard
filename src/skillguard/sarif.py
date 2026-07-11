@@ -84,15 +84,6 @@ def results_to_sarif(results: list[SkillScanResult]) -> dict[str, Any]:
         log     = results_to_sarif([result])
         print(json.dumps(log, indent=2))
     """
-    # Collect the unique rules that fired across all results
-    fired_rule_ids: list[str] = []
-    seen: set[str] = set()
-    for r in results:
-        for f in r.findings:
-            if f.rule_id not in seen:
-                fired_rule_ids.append(f.rule_id)
-                seen.add(f.rule_id)
-
     # Build the full rule index from ALL_RULES so ruleIndex references are stable
     all_rule_ids = [rule.id for rule in ALL_RULES]
     rule_id_to_index = {rid: i for i, rid in enumerate(all_rule_ids)}
@@ -108,8 +99,9 @@ def results_to_sarif(results: list[SkillScanResult]) -> dict[str, Any]:
             )
 
             locations: list[dict[str, Any]] = []
-            # Emit one location per matched line number (up to 5); fall back to
-            # a region-less physicalLocation when no line numbers are available.
+            # Emit one location per matched line number (up to 5 — matches the
+            # JSON output cap); fall back to line 1 when no line numbers are
+            # available so the result always has a valid physicalLocation.
             line_numbers = finding.line_numbers[:5] if finding.line_numbers else [1]
             for lineno in line_numbers:
                 locations.append(
