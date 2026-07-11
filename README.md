@@ -151,10 +151,51 @@ skillguard exits with code `1` if critical/high findings are found — perfect f
 ```bash
 skillguard scan SKILL.md                        # human-readable (default)
 skillguard scan SKILL.md --format json          # machine-readable JSON
+skillguard scan SKILL.md --format sarif         # SARIF 2.1.0 (GitHub Advanced Security)
 skillguard scan ./skills/ --min-severity high   # only HIGH and above
 skillguard scan - < SKILL.md                    # stdin
 skillguard rules                                # list all 12 rules
 ```
+
+### SARIF output and GitHub Advanced Security
+
+`--format sarif` produces a [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) log that can be uploaded to the GitHub Security tab so findings appear as code-scanning alerts alongside your other security tools.
+
+```bash
+skillguard scan ./skills/ --format sarif > skillguard.sarif
+```
+
+**GitHub Actions — upload SARIF to the Security tab:**
+
+```yaml
+name: skillguard security scan
+
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # required to upload SARIF
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install skillguard
+        run: pip install skillguard
+
+      - name: Scan skills and emit SARIF
+        run: skillguard scan ./skills/ --format sarif > skillguard.sarif
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skillguard.sarif
+          category: skillguard
+```
+
+After the workflow runs, findings appear under **Security → Code scanning alerts** with severity labels, affected files, and remediation guidance.
 
 ---
 
@@ -200,7 +241,7 @@ The detection rules map to:
 ## Roadmap
 
 - [ ] LLM-judge pass for semantic prompt injection (catches paraphrased attacks)
-- [ ] SARIF output format for GitHub Advanced Security integration
+- [x] SARIF output format for GitHub Advanced Security integration
 - [ ] `awesome-skills` watchlist auto-scan (daily scan of top-100 starred skills)
 - [ ] VS Code extension
 - [ ] Pre-commit hook
