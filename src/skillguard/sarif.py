@@ -18,8 +18,16 @@ _SARIF_SCHEMA = (
 )
 _SARIF_VERSION = "2.1.0"
 _TOOL_NAME = "skillguard"
-_TOOL_VERSION = "1.0.0"
 _TOOL_URI = "https://github.com/obielin/skillguard"
+
+
+def _tool_version() -> str:
+    try:
+        from skillguard import __version__
+
+        return __version__
+    except Exception:
+        return "unknown"
 
 # Map skillguard Severity → SARIF level
 _SEVERITY_TO_LEVEL: dict[str, str] = {
@@ -146,7 +154,7 @@ def results_to_sarif(results: list[Any]) -> dict[str, Any]:
                 "tool": {
                     "driver": {
                         "name": _TOOL_NAME,
-                        "version": _TOOL_VERSION,
+                        "version": _tool_version(),
                         "informationUri": _TOOL_URI,
                         "rules": driver_rules,
                     }

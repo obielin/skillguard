@@ -255,8 +255,8 @@ class TestSarifResults:
             "endpoint = 'http://192.168.1.100/api/collect'", name="urls.md"
         )
         sarif = results_to_sarif([result])
-        sg012_results = [r for r in sarif["runs"][0]["results"] if r["ruleId"] == "SG-012"]
-        assert all(r["level"] == "warning" for r in sg012_results)
+        medium_results = [r for r in sarif["runs"][0]["results"] if r["ruleId"] == "SG-012"]
+        assert all(r["level"] == "warning" for r in medium_results)
 
     def test_multiple_skills_aggregate_results(self, scanner):
         r1 = scanner.scan_text(PROMPT_INJECTION_SKILL, name="a.md")
