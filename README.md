@@ -151,9 +151,28 @@ skillguard exits with code `1` if critical/high findings are found — perfect f
 ```bash
 skillguard scan SKILL.md                        # human-readable (default)
 skillguard scan SKILL.md --format json          # machine-readable JSON
+skillguard scan SKILL.md --format sarif         # SARIF 2.1.0 (GitHub Security tab)
+skillguard scan ./skills/ --format sarif        # batch SARIF over a directory
 skillguard scan ./skills/ --min-severity high   # only HIGH and above
 skillguard scan - < SKILL.md                    # stdin
 skillguard rules                                # list all 12 rules
+```
+
+### Uploading SARIF to GitHub Advanced Security
+
+Add the following step to any GitHub Actions workflow to surface findings directly in the repository's **Security → Code scanning** tab:
+
+```yaml
+- name: Scan skills and upload SARIF
+  run: |
+    pip install skillguard
+    skillguard scan ./skills/ --format sarif > skillguard.sarif
+
+- name: Upload SARIF to GitHub Security tab
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: skillguard.sarif
+    category: skillguard
 ```
 
 ---
@@ -200,7 +219,6 @@ The detection rules map to:
 ## Roadmap
 
 - [ ] LLM-judge pass for semantic prompt injection (catches paraphrased attacks)
-- [ ] SARIF output format for GitHub Advanced Security integration
 - [ ] `awesome-skills` watchlist auto-scan (daily scan of top-100 starred skills)
 - [ ] VS Code extension
 - [ ] Pre-commit hook
