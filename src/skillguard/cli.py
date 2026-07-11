@@ -139,6 +139,10 @@ def cmd_scan(args) -> int:
                 ],
             }
             print(json.dumps(out, indent=2))
+        elif args.format == "sarif":
+            from skillguard.sarif import report_to_sarif
+
+            print(json.dumps(report_to_sarif(report), indent=2))
         else:
             print(report.summary())
         return 1 if report.critical_count > 0 else 0
@@ -172,6 +176,10 @@ def cmd_scan(args) -> int:
             ],
         }
         print(json.dumps(out, indent=2))
+    elif args.format == "sarif":
+        from skillguard.sarif import results_to_sarif
+
+        print(json.dumps(results_to_sarif(results), indent=2))
     else:
         for result in results:
             _print_result(result, verbose=args.verbose)
@@ -220,7 +228,7 @@ Examples:
     # scan
     p_scan = sub.add_parser("scan", help="Scan a skill file, directory, or stdin")
     p_scan.add_argument("target", help="File, directory, or - for stdin")
-    p_scan.add_argument("--format", choices=["text", "json"], default="text")
+    p_scan.add_argument("--format", choices=["text", "json", "sarif"], default="text")
     p_scan.add_argument(
         "--min-severity",
         default="info",
