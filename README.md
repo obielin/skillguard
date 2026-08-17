@@ -1,4 +1,4 @@
-# skillguar
+# skillguard
 
 **Security scanner for AI agent skills. Detects prompt injection, data exfiltration, and malicious payloads before you install. Zero dependencies.**
 
