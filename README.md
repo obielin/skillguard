@@ -232,7 +232,7 @@ skillguard (scan before install) --> agent-bench (benchmark) --> gov-doc-parser 
 
 The detection rules map to:
 - **OWASP Agentic Skills Top 10** (ASI01–ASI10)
-- **EU AI Act Article 52** (transparency obligations)
+- **EU AI Act Article 50** (transparency obligations)
 - **Snyk ToxicSkills** vulnerability taxonomy
 - **ClawHavoc** attack signatures (Jan 2026)
 
