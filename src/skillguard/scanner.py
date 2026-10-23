@@ -100,7 +100,7 @@ class SkillScanner:
             min_severity: Minimum severity to report (default: INFO = all)
             verbose:      Print scan progress
         """
-        self.rules = rules or ALL_RULES
+        self.rules = ALL_RULES if rules is None else rules
         self.min_severity = min_severity
         self.verbose = verbose
         self._severity_order = list(Severity)
