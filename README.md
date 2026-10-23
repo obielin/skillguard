@@ -2,7 +2,7 @@
 
 Security scanner for AI agent skills. It looks for prompt injection, data exfiltration and malicious payloads in a skill before you install it.
 
-[![Tests](https://img.shields.io/badge/Tests-112%20passing-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-113%20passing-brightgreen?style=flat-square)](tests/)
 [![PyPI](https://img.shields.io/pypi/v/skillshield?style=flat-square)](https://pypi.org/project/skillshield/)
 [![Dependencies](https://img.shields.io/badge/Dependencies-zero-brightgreen?style=flat-square)](pyproject.toml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)](pyproject.toml)
@@ -57,7 +57,7 @@ Options for `skillguard scan`:
 |---|---|---|---|
 | `--format` | `text`, `json`, `sarif` | `text` | Output format. |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, `info` | `info` | Only report findings at this severity or above. |
-| `--verbose`, `-v` | | off | Show matched snippets in text output. It also prints `Scanning ...` progress lines, so do not use it with `--format json` or `--format sarif` when you need valid JSON. |
+| `--verbose`, `-v` | | off | Show matched snippets in text output. It also prints `Scanning ...` progress lines to stderr, so JSON and SARIF output on stdout stay valid. |
 
 `skillguard check` uses all rules and always shows matched snippets.
 
@@ -141,7 +141,7 @@ CRITICAL <inline>
   [SG-002] Data Exfiltration
   Severity: CRITICAL
   Description:
-    The skill contains patterns consistent with data exfiltration -- sending user files, secrets, or environment variables to an external endpoint. Snyk ToxicSkills found 1,467 skills with malicious exfiltration payloads.
+    The skill contains patterns consistent with data exfiltration -- sending user files, secrets, or environment variables to an external endpoint. Snyk's ToxicSkills study confirmed 76 malicious payloads across 3,984 skills.
   Remediation:
     Legitimate skills do not make outbound requests with user data. If network access is required, it must be scoped, documented, and user-consented.
   Matched:
@@ -502,6 +502,6 @@ CI runs `pytest` on Python 3.10, 3.11 and 3.12. It runs `ruff` and `black` on Py
 
 **Linda Oraegbunam**
 
-Senior AI Engineer, | ML Engineer
+Senior AI Engineer | ML Engineer
 
 [LinkedIn](https://www.linkedin.com/in/linda-oraegbunam/) · [Twitter](https://twitter.com/Obie_Linda) · [YouTube](https://youtube.com/@AIwithLinda) · [GitHub](https://github.com/obielin)
