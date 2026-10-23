@@ -94,7 +94,7 @@ RULE_DATA_EXFIL = Rule(
     description=(
         "The skill contains patterns consistent with data exfiltration -- "
         "sending user files, secrets, or environment variables to an external endpoint. "
-        "Snyk ToxicSkills found 1,467 skills with malicious exfiltration payloads."
+        "Snyk's ToxicSkills study confirmed 76 malicious payloads across 3,984 skills."
     ),
     remediation=(
         "Legitimate skills do not make outbound requests with user data. "
@@ -151,7 +151,7 @@ RULE_IDENTITY_HIJACK = Rule(
     severity=Severity.HIGH,
     description=(
         "The skill instructs the agent to impersonate a human, conceal its AI nature, "
-        "or claim to be an entity it is not. This violates EU AI Act Article 52 "
+        "or claim to be an entity it is not. This violates EU AI Act Article 50 "
         "transparency requirements."
     ),
     remediation=(
@@ -159,7 +159,7 @@ RULE_IDENTITY_HIJACK = Rule(
         "asked. Remove any identity-concealment instructions."
     ),
     pattern=re.compile("|".join(_IDENTITY_PATTERNS), re.IGNORECASE | re.MULTILINE),
-    tags=["identity", "transparency", "eu-ai-act-art52"],
+    tags=["identity", "transparency", "eu-ai-act-art50"],
 )
 
 

@@ -476,3 +476,27 @@ class TestSkillScanner:
     def test_all_rules_have_remediation(self):
         for rule in ALL_RULES:
             assert rule.remediation, f"Rule {rule.id} missing remediation"
+
+    def test_verbose_json_directory_stdout_is_valid_json(self, tmp_path):
+        import json
+        import subprocess
+
+        (tmp_path / "evil.md").write_text(PROMPT_INJECTION_SKILL)
+        (tmp_path / "clean.md").write_text(CLEAN_SKILL)
+        out = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "skillguard.cli",
+                "scan",
+                str(tmp_path),
+                "--format",
+                "json",
+                "--verbose",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        report = json.loads(out.stdout)
+        assert report["total"] == 2
+        assert "Scanning" in out.stderr

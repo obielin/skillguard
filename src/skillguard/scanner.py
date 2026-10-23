@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import time
 from pathlib import Path
 from typing import Callable
@@ -229,4 +230,4 @@ class SkillScanner:
 
     def _log(self, msg: str) -> None:
         if self.verbose:
-            print(msg)
+            print(msg, file=sys.stderr)
