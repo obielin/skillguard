@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from skillguard import __version__
 from skillguard.models import BatchScanReport, SkillScanResult
 from skillguard.rules import ALL_RULES, Rule, Severity
 
@@ -19,7 +20,7 @@ _SARIF_SCHEMA = (
     "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
 )
 _TOOL_NAME = "skillguard"
-_TOOL_VERSION = "1.0.0"
+_TOOL_VERSION = __version__
 _TOOL_INFO_URI = "https://github.com/obielin/skillguard"
 
 # Map skillguard Severity to SARIF level

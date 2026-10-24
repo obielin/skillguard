@@ -500,3 +500,17 @@ class TestSkillScanner:
         report = json.loads(out.stdout)
         assert report["total"] == 2
         assert "Scanning" in out.stderr
+
+
+# ── CLI ────────────────────────────────────────────────────────
+
+
+def test_cli_version_prints_package_version(monkeypatch, capsys):
+    import skillguard
+    from skillguard.cli import main
+
+    monkeypatch.setattr(sys, "argv", ["skillguard", "--version"])
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out.strip() == f"skillguard {skillguard.__version__}"

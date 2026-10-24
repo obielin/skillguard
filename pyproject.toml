@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skillshield"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Security scanner for AI agent skills. Detects prompt injection, data exfiltration, and malicious payloads before you install. Zero dependencies."
 readme = "README.md"
 license = { text = "MIT" }
@@ -45,6 +45,9 @@ Homepage = "https://github.com/obielin/skillguard"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "skillguard.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

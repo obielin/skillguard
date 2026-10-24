@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import skillguard
 from skillguard import SkillScanner
 from skillguard.models import SkillScanResult
 from skillguard.sarif import report_to_sarif, results_to_sarif, to_sarif_string
@@ -65,6 +66,10 @@ class TestSarifTopLevel:
     def test_tool_driver_has_version(self):
         run = results_to_sarif([_scan(CLEAN_SKILL)])["runs"][0]
         assert "version" in run["tool"]["driver"]
+
+    def test_tool_driver_version_is_package_version(self):
+        run = results_to_sarif([_scan(CLEAN_SKILL)])["runs"][0]
+        assert run["tool"]["driver"]["version"] == skillguard.__version__
 
     def test_tool_driver_has_information_uri(self):
         run = results_to_sarif([_scan(CLEAN_SKILL)])["runs"][0]

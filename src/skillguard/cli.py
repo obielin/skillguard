@@ -16,6 +16,8 @@ import json
 import sys
 from pathlib import Path
 
+from skillguard import __version__
+
 
 def _color(text: str, level: str) -> str:
     """ANSI colour codes for terminal output."""
@@ -222,7 +224,7 @@ Examples:
   cat SKILL.md | skillguard scan -
         """,
     )
-    p.add_argument("--version", action="version", version="skillguard 1.0.0")
+    p.add_argument("--version", action="version", version=f"skillguard {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
 
     # scan
