@@ -2,7 +2,7 @@
 
 Security scanner for AI agent skills. It looks for prompt injection, data exfiltration and malicious payloads in a skill before you install it.
 
-[![Tests](https://img.shields.io/badge/Tests-128%20passing-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-146%20passing-brightgreen?style=flat-square)](tests/)
 [![PyPI](https://img.shields.io/pypi/v/skillshield?style=flat-square)](https://pypi.org/project/skillshield/)
 [![Dependencies](https://img.shields.io/badge/Dependencies-zero-brightgreen?style=flat-square)](pyproject.toml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)](pyproject.toml)
@@ -42,7 +42,7 @@ Rule IDs (`SG-001` to `SG-012`) have not changed. SARIF output now names the too
 
 The `skillguard` package on PyPI, and `skill-guard`, are other people's projects, not this one.
 
-- Version 1.1.0
+- Version 1.2.0
 - Python 3.10 or later
 - No runtime dependencies
 - MIT licence
@@ -390,49 +390,78 @@ skillshield scan ./skills/ --format sarif > skillshield.sarif
 
 ## CI usage
 
-### Fail the build on CRITICAL findings
+### GitHub Action
+
+Add this to a workflow to scan your skills on every push and pull request:
 
 ```yaml
-- name: Scan skills for security issues
-  run: |
-    pip install skillshield
-    skillshield scan ./skills/
-```
-
-This step fails when any file in `./skills/` is CRITICAL. HIGH findings in a directory scan do not fail it. To fail on HIGH as well, scan each file on its own, because a single-file scan exits 1 on CRITICAL or HIGH.
-
-### Upload SARIF to GitHub code scanning
-
-```yaml
-name: skillshield security scan
+name: SkillShield
 
 on: [push, pull_request]
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write   # needed to upload SARIF
-      contents: read
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install skillshield
-        run: pip install skillshield
-
-      - name: Scan skills and write SARIF
-        run: skillshield scan ./skills/ --format sarif > skillshield.sarif
-
-      - name: Upload SARIF to GitHub code scanning
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+      - uses: actions/checkout@v7
+      - uses: obielin/skillshield@v1
         with:
-          sarif_file: skillshield.sarif
+          path: skills
+```
+
+The step fails when any file is HIGH or CRITICAL. A file counts as HIGH if its risk level is HIGH or it has a HIGH finding, so one HIGH finding fails the step even when its score alone would rate it MEDIUM. Flagged files are shown as annotations on the pull request and listed in the job summary.
+
+| Input | Default | What it does |
+|---|---|---|
+| `path` | `.` | Files or directories to scan, one per line. Directories are scanned recursively, skipping `.git`, `node_modules` and virtual environments. |
+| `fail-on` | `high` | Fail at this level or above: `critical`, `high`, `medium`, `low` or `none`. |
+| `min-severity` | `info` | Ignore findings below this severity. |
+| `sarif-file` | a temporary file | Where to write the SARIF report. |
+
+| Output | What it holds |
+|---|---|
+| `risk-level` | The highest level found: `SAFE`, `LOW`, `MEDIUM`, `HIGH` or `CRITICAL`. |
+| `scanned` | The number of files scanned. |
+| `flagged` | The number of files with at least one finding. |
+| `findings` | The total number of findings. |
+| `sarif-file` | The path of the SARIF report. |
+
+The step exits with an error, whatever `fail-on` is set to, when a path does not exist or a file cannot be read. The action runs on Linux, macOS and Windows runners, and needs Python 3.10 or later, which GitHub-hosted runners already have.
+
+### Show findings in GitHub code scanning
+
+```yaml
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # needed to upload SARIF
+    steps:
+      - uses: actions/checkout@v7
+      - uses: obielin/skillshield@v1
+        id: skillshield
+        with:
+          path: skills
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: ${{ steps.skillshield.outputs.sarif-file }}
           category: skillshield
 ```
 
-The scan step exits 1 when a file is CRITICAL. `if: always()` makes the upload step run in that case too. Findings then show under **Security > Code scanning alerts**.
+`if: always()` uploads the report even when the scan step fails. Findings then show under **Security > Code scanning alerts**, linked to the file and line.
+
+### Other CI systems
+
+The same scan runs anywhere with Python 3.10 or later:
+
+```bash
+pip install skillshield
+SKILLSHIELD_PATHS=skills SKILLSHIELD_SARIF_FILE=skillshield.sarif python -m skillshield.ci
+```
+
+It takes the settings above as environment variables (`SKILLSHIELD_PATHS`, `SKILLSHIELD_FAIL_ON`, `SKILLSHIELD_MIN_SEVERITY`, `SKILLSHIELD_SARIF_FILE`) and uses the same exit codes: 0 pass, 1 fail, 2 a missing path, an unreadable file or an invalid setting.
 
 ---
 
@@ -475,6 +504,7 @@ print([f.rule_id for f in defaults_plus_mine.scan_text(text).findings])
 
 - [ ] LLM-judge pass for semantic prompt injection (catches paraphrased attacks)
 - [x] SARIF output format for GitHub Advanced Security integration
+- [x] GitHub Action (`uses: obielin/skillshield@v1`)
 - [ ] `awesome-skills` watchlist auto-scan (daily scan of top-100 starred skills)
 - [ ] VS Code extension
 - [ ] Pre-commit hook

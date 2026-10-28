@@ -1,0 +1,59 @@
+name: Action self-test
+
+# Runs the SkillShield GitHub Action from this checkout against the fixtures
+# in tests/fixtures/action, on every runner type people are likely to use.
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Clean skill passes
+        id: clean
+        uses: ./
+        with:
+          path: tests/fixtures/action/clean
+
+      - name: Risky skill fails
+        id: risky
+        continue-on-error: true
+        uses: ./
+        with:
+          path: tests/fixtures/action/risky
+          sarif-file: risky.sarif
+
+      - name: Risky skill reported with fail-on none
+        id: report-only
+        uses: ./
+        with:
+          path: tests/fixtures/action/risky
+          fail-on: none
+
+      - name: Check the results
+        shell: bash
+        env:
+          CLEAN_LEVEL: ${{ steps.clean.outputs.risk-level }}
+          RISKY_OUTCOME: ${{ steps.risky.outcome }}
+          RISKY_LEVEL: ${{ steps.risky.outputs.risk-level }}
+          RISKY_FLAGGED: ${{ steps.risky.outputs.flagged }}
+          RISKY_SARIF: ${{ steps.risky.outputs.sarif-file }}
+          REPORT_LEVEL: ${{ steps.report-only.outputs.risk-level }}
+        run: |
+          set -eu
+          test "$CLEAN_LEVEL" = "SAFE"
+          test "$RISKY_OUTCOME" = "failure"
+          test "$RISKY_LEVEL" = "CRITICAL"
+          test "$RISKY_FLAGGED" = "1"
+          test "$RISKY_SARIF" = "risky.sarif"
+          grep -q '"uri": "tests/fixtures/action/risky/skills/notes/SKILL.md"' risky.sarif
+          test "$REPORT_LEVEL" = "CRITICAL"
+          echo "All action checks passed."
