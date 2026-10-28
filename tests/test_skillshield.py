@@ -401,6 +401,19 @@ class TestSkillScanner:
         assert report.flagged_count >= 2
         assert report.critical_count >= 1
 
+    def test_scan_directory_names_results_by_relative_path(self, tmp_path, monkeypatch, capsys):
+        import json
+
+        for sub in ("a", "b"):
+            (tmp_path / sub).mkdir()
+            (tmp_path / sub / "SKILL.md").write_text(PROMPT_INJECTION_SKILL)
+        summary = SkillScanner().scan_directory(tmp_path).summary()
+        assert "a/SKILL.md" in summary and "b/SKILL.md" in summary
+
+        _run_cli(monkeypatch, "scan", str(tmp_path), "--format", "json")
+        out = json.loads(capsys.readouterr().out)
+        assert [r["skill"] for r in out["results"]] == ["a/SKILL.md", "b/SKILL.md"]
+
     def test_scan_texts_batch(self, scanner):
         skills = {
             "clean": CLEAN_SKILL,

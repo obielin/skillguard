@@ -10,6 +10,10 @@ All notable changes to this project are listed here. The format follows [Keep a 
 - `docs/threat-coverage.md`: the attack techniques reported against agent skills in 2025–2026, with sources, and how far SkillShield covers each.
 - A Limitations section in the README.
 
+### Fixed
+
+- A directory scan names each file by its path relative to the scanned directory (for example `a/SKILL.md`), with forward slashes, in text, JSON and SARIF output. Before, it used the file name only, so SARIF results for several `SKILL.md` files all pointed at `SKILL.md` (#24).
+
 ## [1.2.0]
 
 ### Added

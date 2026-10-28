@@ -196,8 +196,11 @@ class SkillScanner:
         results: list[SkillScanResult] = []
 
         for i, path in enumerate(paths):
-            on_progress and on_progress(path.name, i + 1, len(paths))
-            results.append(self.scan_file(path))
+            name = path.relative_to(base).as_posix()
+            on_progress and on_progress(name, i + 1, len(paths))
+            result = self.scan_file(path)
+            result.skill_name = name
+            results.append(result)
 
         return BatchScanReport(results=results)
 
