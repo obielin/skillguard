@@ -43,7 +43,7 @@ AST numbers refer to the [OWASP Agentic Skills Top 10](https://owasp.org/www-pro
 | 15 | Short base64 piped into a shell | AST01 | [Snyk ClawdHub campaign][snyk-camp] | Covered (SG-006) |
 | 16 | Fake prerequisite: password-protected archive, then run it | AST01 | [The Hacker News][thn], [Snyk][snyk-camp] | Gap: #44 |
 | 17 | Script from a paste site, pasted into a terminal | AST01 | [The Hacker News][thn] | Gap: #45 |
-| 27 | pip or npm pointed at an untrusted registry | AST02 | [Trail of Bits via CSA][csa] | Gap: #46 |
+| 27 | pip or npm pointed at an untrusted registry | AST02 | [Trail of Bits via CSA][csa] | Covered (SG-013) |
 
 ## Data theft
 
