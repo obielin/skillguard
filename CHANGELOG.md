@@ -14,6 +14,7 @@ All notable changes to this project are listed here. The format follows [Keep a 
 - `docs/threat-coverage.md`: the attack techniques reported against agent skills in 2025–2026, with sources, and how far SkillShield covers each.
 - A Limitations section in the README.
 - SG-006 now flags base64 data decoded and piped into a shell (`base64 -d | bash` and similar), whatever the length of the encoded string (#43). The ClawHavoc campaign used this as its execution trigger.
+- SG-014, Compiled Python Payload: a `.pyc` or `.pyo` file found in a skill folder is reported as a HIGH finding, and the finding notes when the matching `.py` source is missing. Bytecode runs directly but cannot be reviewed, so it is treated as a payload carrier (#42).
 
 ### Fixed
 

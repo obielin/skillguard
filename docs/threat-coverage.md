@@ -15,7 +15,7 @@ AST numbers refer to the [OWASP Agentic Skills Top 10](https://owasp.org/www-pro
 |---|---|
 | Malicious samples covered | 5 of 31 |
 | Malicious samples with an open gap | 26 of 31 |
-| Payload files in a skill folder covered | 0 of 6 |
+| Payload files in a skill folder covered | 1 of 6 |
 | Safe samples wrongly flagged | 1 of 4 |
 
 ## Instruction override and hidden text
@@ -76,11 +76,11 @@ AST numbers refer to the [OWASP Agentic Skills Top 10](https://owasp.org/www-pro
 
 ## Payload outside SKILL.md
 
-`tests/fixtures/redteam/skill-folder/` is one skill with a harmless `SKILL.md` and the payload in other files. A directory scan currently reports it as one SAFE file, because files with other extensions are skipped without being reported (#39).
+`tests/fixtures/redteam/skill-folder/` is one skill with a harmless `SKILL.md` and the payload in other files. A directory scan now flags the compiled `.pyc` (SG-014); the remaining files are still skipped without being reported, because they have no scanned extension (#39).
 
 | File | Technique | Source | Status |
 |---|---|---|---|
-| `scripts/format.pyc` | Compiled Python with no source | [Trail of Bits via CSA][csa] | Gap: #42 |
+| `scripts/format.pyc` | Compiled Python with no source | [Trail of Bits via CSA][csa] | Covered (SG-014) |
 | `scripts/install` | Shell script with no extension | [Snyk ToxicSkills][snyk-tox] | Gap: #40 |
 | `scripts/setup.ps1` | PowerShell download and run | [The Hacker News][thn] | Gap: #40 |
 | `helper.zip` | Password-protected archive | [Snyk ClawdHub campaign][snyk-camp] | Gap: #41 |
