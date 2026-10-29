@@ -9,7 +9,7 @@ const RELEASE_AFTER_DAYS = 14;
 const MAX_OPEN_CLAIMS = 3;
 const FIRST_TIMER_LABEL = "good first issue";
 const NOT_CLAIMABLE_LABELS = ["roadmap"];
-const REMINDER_MARKER = "<!-- skillshield-claim-reminder -->";
+const REMINDER_MARKER = "<!-- skillshield-claim-reminder";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const HOW_IT_WORKS =
@@ -32,6 +32,31 @@ function labelNames(issue) {
   return (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name).toLowerCase());
 }
 
+function reminderMarker(login) {
+  return `${REMINDER_MARKER}:${login} -->`;
+}
+
+// Open issues (not PRs) assigned to `login`. Uses the issues API rather than
+// search, because search results lag behind recent assignments.
+async function openClaims(github, owner, repo, login) {
+  const items = await github.paginate(github.rest.issues.listForRepo, {
+    owner, repo, state: "open", assignee: login, per_page: 100,
+  });
+  return items.filter((i) => !i.pull_request);
+}
+
+// When each current assignee was most recently assigned, from the timeline.
+async function assignedAt(github, owner, repo, number) {
+  const timeline = await github.paginate(github.rest.issues.listEventsForTimeline, {
+    owner, repo, issue_number: number, per_page: 100,
+  });
+  const at = {};
+  for (const e of timeline) {
+    if (e.event === "assigned" && e.assignee) at[e.assignee.login] = Date.parse(e.created_at);
+  }
+  return at;
+}
+
 async function searchCount(github, q) {
   const { data } = await github.rest.search.issuesAndPullRequests({ q, per_page: 1 });
   return data.total_count;
@@ -51,11 +76,14 @@ async function handleComment({ github, context }) {
 
   const user = comment.user.login;
   const number = issue.number;
-  const assignees = (issue.assignees || []).map((a) => a.login);
-  const labels = labelNames(issue);
+  // Read the issue as it is now, not as it was when the comment was made:
+  // another command may have changed it in between.
+  const { data: current } = await github.rest.issues.get({ owner, repo, issue_number: number });
+  const assignees = (current.assignees || []).map((a) => a.login);
+  const labels = labelNames(current);
   const contributeUrl = `https://github.com/${owner}/${repo}/contribute`;
 
-  if (issue.state !== "open") {
+  if (current.state !== "open") {
     await reply(github, owner, repo, number, `@${user} this issue is closed, so it can't be claimed. Have a look at the [open issues](${contributeUrl}).`);
     return "closed";
   }
@@ -100,16 +128,16 @@ async function handleComment({ github, context }) {
       await reply(github, owner, repo, number, `@${user} thanks for offering! \`good first issue\` is kept for people who haven't had a pull request merged here yet, so newcomers always have a way in. Since you have, the [\`help wanted\`](https://github.com/${owner}/${repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues are yours to pick from.`);
       return "not-first-timer";
     }
-    const firstTimerClaims = await searchCount(github, `repo:${owner}/${repo} is:issue is:open label:"${FIRST_TIMER_LABEL}" assignee:${user}`);
-    if (firstTimerClaims > 0) {
+    const firstTimerClaims = (await openClaims(github, owner, repo, user)).filter((i) => labelNames(i).includes(FIRST_TIMER_LABEL));
+    if (firstTimerClaims.length > 0) {
       await reply(github, owner, repo, number, `@${user} you already have a \`good first issue\` assigned. Please finish or \`/unassign\` that one first, so other newcomers get a turn.`);
       return "one-first-timer-issue";
     }
   }
 
-  const openClaims = await searchCount(github, `repo:${owner}/${repo} is:issue is:open assignee:${user}`);
-  if (openClaims >= MAX_OPEN_CLAIMS) {
-    await reply(github, owner, repo, number, `@${user} you already have ${openClaims} open issues assigned. Please finish or \`/unassign\` one of them before claiming another.`);
+  const claimed = (await openClaims(github, owner, repo, user)).length;
+  if (claimed >= MAX_OPEN_CLAIMS) {
+    await reply(github, owner, repo, number, `@${user} you already have ${claimed} open issues assigned. Please finish or \`/unassign\` one of them before claiming another.`);
     return "too-many";
   }
 
@@ -117,6 +145,26 @@ async function handleComment({ github, context }) {
   if (!(data.assignees || []).some((a) => a.login === user)) {
     await reply(github, owner, repo, number, `@${user} GitHub didn't accept the assignment. A maintainer will assign it to you by hand.`);
     return "assign-failed";
+  }
+
+  // Two commands can run at the same time. Check again now that the
+  // assignment is made, and back ours out if it broke a rule.
+  const undo = async (message, result) => {
+    await github.rest.issues.removeAssignees({ owner, repo, issue_number: number, assignees: [user] });
+    await reply(github, owner, repo, number, `@${user} ${message}`);
+    return result;
+  };
+  const at = await assignedAt(github, owner, repo, number);
+  const others = (data.assignees || []).map((a) => a.login).filter((l) => l !== user && l !== owner);
+  if (others.some((l) => (at[l] || 0) <= (at[user] || Infinity))) {
+    return undo("someone claimed this issue just before you, so it stays with them. Have a look at the [other open issues](" + contributeUrl + ").", "lost-race");
+  }
+  const nowClaimed = await openClaims(github, owner, repo, user);
+  if (nowClaimed.length > MAX_OPEN_CLAIMS) {
+    return undo(`you now have more than ${MAX_OPEN_CLAIMS} open issues assigned, so this claim was undone. Please finish or \`/unassign\` one first.`, "too-many");
+  }
+  if (labels.includes(FIRST_TIMER_LABEL) && nowClaimed.filter((i) => labelNames(i).includes(FIRST_TIMER_LABEL)).length > 1) {
+    return undo("you already have a `good first issue` assigned, so this claim was undone. Please finish or `/unassign` that one first.", "one-first-timer-issue");
   }
   await reply(github, owner, repo, number, `@${user} it's yours, thanks for picking this up! Please read [CONTRIBUTING.md](https://github.com/${owner}/${repo}/blob/main/CONTRIBUTING.md) before you start.\n\n${HOW_IT_WORKS}`);
   return "assigned";
@@ -147,9 +195,15 @@ function hasOpenLinkedPr(timeline) {
   );
 }
 
-function remindedSince(timeline, since) {
+// Only a reminder posted by a bot, for this assignee, counts.
+function remindedSince(timeline, since, login) {
   return timeline.some(
-    (e) => e.event === "commented" && Date.parse(e.created_at) > since && (e.body || "").includes(REMINDER_MARKER),
+    (e) =>
+      e.event === "commented" &&
+      Boolean(e.actor || e.user) &&
+      isBot(e.actor || e.user) &&
+      Date.parse(e.created_at) > since &&
+      (e.body || "").includes(reminderMarker(login)),
   );
 }
 
@@ -175,8 +229,8 @@ async function releaseStale({ github, context, now = Date.now() }) {
         await github.rest.issues.removeAssignees({ owner, repo, issue_number: issue.number, assignees: [login] });
         await reply(github, owner, repo, issue.number, `@${login} there's been no activity here for ${RELEASE_AFTER_DAYS} days, so this issue is released for someone else. Thank you for your interest: if you'd like to pick it back up, comment \`/assign\` while it's still free.`);
         actions.push({ issue: issue.number, user: login, action: "released" });
-      } else if (idleDays >= REMIND_AFTER_DAYS && !remindedSince(timeline, last)) {
-        await reply(github, owner, repo, issue.number, `${REMINDER_MARKER}\n@${login} just checking in: are you still working on this? It will be released in ${RELEASE_AFTER_DAYS - Math.floor(idleDays)} days if there's no activity. Comment \`/extend\` to keep it, or \`/unassign\` to let it go. No pressure either way.`);
+      } else if (idleDays >= REMIND_AFTER_DAYS && !remindedSince(timeline, last, login)) {
+        await reply(github, owner, repo, issue.number, `${reminderMarker(login)}\n@${login} just checking in: are you still working on this? It will be released in ${RELEASE_AFTER_DAYS - Math.floor(idleDays)} days if there's no activity. Comment \`/extend\` to keep it, or \`/unassign\` to let it go. No pressure either way.`);
         actions.push({ issue: issue.number, user: login, action: "reminded" });
       }
     }
@@ -184,4 +238,4 @@ async function releaseStale({ github, context, now = Date.now() }) {
   return actions;
 }
 
-module.exports = { handleComment, releaseStale, parseCommand, lastActivity, hasOpenLinkedPr, REMINDER_MARKER };
+module.exports = { handleComment, releaseStale, parseCommand, lastActivity, hasOpenLinkedPr, reminderMarker };

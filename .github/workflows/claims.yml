@@ -4,6 +4,11 @@ name: Issue claims
 # then releases claims with no activity. The logic and its tests are in
 # .github/scripts/claims.js. This workflow only ever runs code from the default
 # branch: it checks out main, never a pull request.
+#
+# Commands are not queued with a concurrency group, because GitHub keeps only
+# one pending run per group and drops the rest. Instead, claims.js re-reads the
+# issue before acting and re-checks the rules after assigning, undoing its own
+# assignment if another run got there first.
 on:
   issue_comment:
     types: [created]
@@ -14,10 +19,6 @@ on:
 permissions:
   contents: read
   issues: write
-
-concurrency:
-  group: claims-${{ github.event.issue.number || 'stale' }}
-  cancel-in-progress: false
 
 jobs:
   command:
@@ -40,6 +41,9 @@ jobs:
   stale:
     if: github.event_name != 'issue_comment'
     runs-on: ubuntu-latest
+    concurrency:
+      group: claims-stale
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
