@@ -1,6 +1,7 @@
 # CodeRabbit configuration for SkillShield.
 # CodeRabbit is a first reviewer: it comments and suggests, and a maintainer
-# decides. It never requests changes, applies labels, or pushes to a branch.
+# decides. It never requests changes or pushes to a branch. The only label it
+# applies is quality-check (see slop_detection); all others are suggestions.
 # Docs: https://docs.coderabbit.ai/reference/configuration
 language: en-US
 tone_instructions: "Be specific and brief. Cite file:line. Be warm to first-time contributors. Prefer one precise finding over three vague ones. Show a failing input when you report a bug."
@@ -23,8 +24,9 @@ reviews:
   auto_assign_reviewers: false
   abort_on_close: true
 
-  # Flags low-effort or machine-generated PRs for a human to read first.
-  # Nothing is closed or blocked on this label.
+  # Applies the quality-check label to PRs that look low-effort or
+  # machine-generated, so a maintainer reads them first. Nothing is closed or
+  # blocked on this label. This is the one label CodeRabbit applies itself.
   slop_detection:
     enabled: true
     label: "quality-check"
@@ -109,7 +111,7 @@ reviews:
 
   finishing_touches:
     docstrings: { enabled: false }
-    unit_tests: { enabled: true }      # only when asked: @coderabbitai generate unit tests
+    unit_tests: { enabled: false }     # off: generated tests can be committed to a contributor's branch
     simplify: { enabled: false }
     autofix: { enabled: false }        # no bot pushes to a contributor's branch
     fix_ci: { enabled: false }
@@ -137,7 +139,7 @@ reviews:
         instructions: "Fail if any added test sample or example contains a working payload, a real secret, or a URL, domain, IP address or wallet address that is not obviously fake or reserved for documentation."
       - name: "Regex performance"
         mode: warning
-        instructions: "Warn if the PR adds a regular expression with nested quantifiers, or a multiline pattern starting with ^\\s*, without a test showing a 100,000-line input scans in under a second."
+        instructions: "Only consider regular expressions added or changed in Python files under src/ (ignore patterns quoted in documentation or configuration). Warn if one has nested quantifiers, or is a multiline pattern starting with ^\\s*, and the PR has no test showing a 100,000-line input scans in under a second."
       - name: "Rule tests"
         mode: warning
         instructions: "Warn if the PR adds a detection rule or pattern without at least two true positives, one true negative and one near-miss test, or without a reference to where the technique comes from."
