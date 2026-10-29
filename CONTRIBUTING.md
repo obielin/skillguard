@@ -101,6 +101,10 @@ This repository holds examples of attacks, so treat samples with care:
 
 A PR that breaks these rules will be asked to change the samples before review continues.
 
+## Automated review
+
+[CodeRabbit](https://www.coderabbit.ai) reviews every pull request and posts a summary and comments, usually within a few minutes. Its comments are suggestions: a maintainer reads every PR and makes the decision. You can reply to it, or ask it a question by mentioning `@coderabbitai` in a comment on your PR.
+
 ## Claiming an issue
 
 Comment on an issue to say you are working on it, and a maintainer will assign it to you. If there is no activity for 14 days, the issue may be offered to someone else. You can always say you need more time.
