@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable
+from urllib.parse import urlparse
 
 
 class Severity(str, Enum):
@@ -453,6 +454,98 @@ RULE_SUSPICIOUS_URLS = Rule(
 )
 
 
+# ── SG-013: Untrusted Package Registry ───────────────────────
+
+# Hosts of the official package registries. An install that points anywhere
+# else is a supply-chain attack (dependency confusion / registry hijack).
+_OFFICIAL_REGISTRY_HOSTS = {
+    "pypi.org",
+    "files.pythonhosted.org",
+    "pypi.python.org",
+    "test.pypi.org",
+    "registry.npmjs.org",
+    "registry.yarnpkg.com",
+    "npm.pkg.github.com",
+}
+
+# Every whitespace run here is [ \t] rather than \s: \s matches newlines, so a
+# pattern anchored with ^ would rescan the rest of the file from each blank
+# line, and 100,000 blank lines would stall a scan.
+_REGISTRY_URL_PATTERNS = [
+    r"(?:--index-url|--extra-index-url)[ \t]*[= \t][ \t]*['\"]?(https?://[^\s'\"`]+)",
+    r"pip[ \t]+config[ \t]+set[ \t]+\S*index-url[ \t]+['\"]?(https?://[^\s'\"`]+)",
+    r"PIP_(?:EXTRA_)?INDEX_URL[ \t]*=[ \t]*['\"]?(https?://[^\s'\"`]+)",
+    r"npm[ \t]+config[ \t]+set[ \t]+(?:[^\s:]+:)?registry[ \t]+['\"]?(https?://[^\s'\"`]+)",
+    r"--registry[ \t]*[= \t][ \t]*['\"]?(https?://[^\s'\"`]+)",
+    r"yarn[ \t]+config[ \t]+set[ \t]+npmRegistryServer[ \t]+['\"]?(https?://[^\s'\"`]+)",
+]
+
+# pip's short flag is a single letter, so it is only a registry override on a
+# pip install line; "curl -i" and "grep -i" take the same flag and are clean.
+_PIP_SHORT_FLAG_PATTERN = (
+    r"(?im)^[^\n]*\bpip3?[ \t]+install\b[^\n]*[ \t]-i[ \t]*[= \t]?[ \t]*"
+    r"['\"]?(https?://[^\s'\"`]+)"
+)
+
+
+def _is_official_registry(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host in _OFFICIAL_REGISTRY_HOSTS or any(
+        host.endswith("." + official) for official in _OFFICIAL_REGISTRY_HOSTS
+    )
+
+
+def _check_untrusted_registry(text: str) -> list[str]:
+    hits: list[str] = []
+    for pattern in _REGISTRY_URL_PATTERNS:
+        for match in re.finditer(pattern, text, re.IGNORECASE):
+            if not _is_official_registry(match.group(1)):
+                hits.append(match.group(0).strip())
+
+    # A pip.conf / .npmrc / .pypirc line that sets the registry directly
+    # (index-url = ..., registry=..., npmRegistryServer: ...). This catches the
+    # config-file route without tripping on a documentation link.
+    for match in re.finditer(_PIP_SHORT_FLAG_PATTERN, text):
+        if not _is_official_registry(match.group(1)):
+            hits.append(match.group(0).strip())
+
+    ini_pattern = (
+        r"(?im)^[ \t]*(?:registry|index[-_]url|extra[-_]index[-_]url|npmRegistryServer)"
+        r"[ \t]*[:=][ \t]*['\"]?(https?://[^\s'\"`]+)"
+    )
+    for match in re.finditer(ini_pattern, text):
+        if not _is_official_registry(match.group(1)):
+            hits.append(match.group(0).strip())
+
+    unique: list[str] = []
+    for hit in hits:
+        if hit not in unique:
+            unique.append(hit)
+    return unique
+
+
+RULE_PACKAGE_REGISTRY = Rule(
+    id="SG-013",
+    name="Untrusted Package Registry",
+    severity=Severity.HIGH,
+    description=(
+        "The skill points pip, npm or yarn at a package registry other than the "
+        "official one (--index-url, --registry, npm/yarn config, or a pip.conf, "
+        ".npmrc or .pypirc override). A later install then pulls the attacker's "
+        "packages -- dependency confusion / supply-chain compromise (OWASP AST02). "
+        "Trail of Bits reported this bypass in the CSA review of skill scanners."
+    ),
+    remediation=(
+        "Install from the official registries only: pypi.org for pip and "
+        "registry.npmjs.org for npm. Remove --index-url, --extra-index-url, "
+        "-i, --registry and npm/yarn config overrides, and remove registry lines "
+        "from pip.conf, .npmrc or .pypirc that point anywhere else."
+    ),
+    check_fn=_check_untrusted_registry,
+    tags=["registry", "supply-chain", "dependency-confusion", "owasp-ast02"],
+)
+
+
 # ── All rules ──────────────────────────────────────────────────
 
 ALL_RULES: list[Rule] = [
@@ -468,4 +561,5 @@ ALL_RULES: list[Rule] = [
     RULE_COVERT_CHANNEL,
     RULE_SOCIAL_ENG,
     RULE_SUSPICIOUS_URLS,
+    RULE_PACKAGE_REGISTRY,
 ]

