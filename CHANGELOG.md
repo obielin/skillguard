@@ -4,9 +4,13 @@ All notable changes to this project are listed here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Changed
+
+- The package, CLI and Action descriptions now say SkillShield flags *known* attack patterns, and the README points to the Limitations section and the new [ROADMAP.md](ROADMAP.md).
+
 ### Added
 
-- A red-team corpus (`tests/fixtures/redteam/`, `tests/test_redteam.py`): 29 defanged malicious skills, one per attack technique, 4 safe skills that look suspicious, and a skill folder that hides its payload outside `SKILL.md`. Techniques SkillShield does not catch yet are tracked as known gaps.
+- A red-team corpus (`tests/fixtures/redteam/`, `tests/test_redteam.py`): 31 defanged malicious skills, one per attack technique, 4 safe skills that look suspicious, and a skill folder that hides its payload outside `SKILL.md`. Techniques SkillShield does not catch yet are tracked as known gaps.
 - `docs/threat-coverage.md`: the attack techniques reported against agent skills in 2025–2026, with sources, and how far SkillShield covers each.
 - A Limitations section in the README.
 - SG-006 now flags base64 data decoded and piped into a shell (`base64 -d | bash` and similar), whatever the length of the encoded string (#43). The ClawHavoc campaign used this as its execution trigger.
