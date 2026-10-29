@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Callable
 
 from skillshield.models import BatchScanReport, Finding, SkillScanResult
-from skillshield.rules import ALL_RULES, Rule, Severity
+from skillshield.rules import ALL_RULES, RULE_COMPILED_PYTHON, Rule, Severity
 
 # Severity weights for risk score calculation
 _SEVERITY_WEIGHTS = {
@@ -35,6 +35,9 @@ SKILL_EXTENSIONS = {
     ".xml",
     ".html",
 }
+
+# Compiled Python that Python runs directly but a text scanner cannot read.
+COMPILED_PYTHON_EXTENSIONS = {".pyc", ".pyo"}
 
 
 def _compute_risk_score(findings: list[Finding]) -> float:
@@ -168,6 +171,34 @@ class SkillScanner:
             )
         return self.scan_text(text, name=p.name)
 
+    def _scan_compiled_file(self, path: Path, base: Path | None = None) -> SkillScanResult:
+        """Report a compiled Python file as a HIGH finding.
+
+        Bytecode is not reviewable and Python runs it directly, so a skill that
+        ships a .pyc/.pyo is treated as a payload carrier rather than skipped.
+        """
+        name = path.relative_to(base).as_posix() if base is not None else path.name
+        self._log(f"  Scanning {name} (compiled)...")
+        snippet = name
+        source = path.with_suffix(".py")
+        if not source.exists():
+            snippet = f"{name} (no matching {source.name}; ship the source instead)"
+        findings: list[Finding] = []
+        if not self._below_min_severity(RULE_COMPILED_PYTHON.severity):
+            findings.append(
+                Finding(rule=RULE_COMPILED_PYTHON, snippets=[snippet], line_numbers=[1])
+            )
+        score = _compute_risk_score(findings)
+        return SkillScanResult(
+            skill_name=name,
+            findings=findings,
+            risk_score=score,
+            risk_level=_risk_level(score, findings),
+            scan_time_ms=0.0,
+            line_count=0,
+            char_count=0,
+        )
+
     def scan_directory(
         self,
         directory: str | Path,
@@ -190,7 +221,9 @@ class SkillScanner:
         exts = extensions or SKILL_EXTENSIONS
         base = Path(directory)
         glob = base.rglob("*") if recursive else base.glob("*")
-        paths = [p for p in sorted(glob) if p.is_file() and p.suffix.lower() in exts]
+        all_files = [p for p in sorted(glob) if p.is_file()]
+        paths = [p for p in all_files if p.suffix.lower() in exts]
+        compiled = [p for p in all_files if p.suffix.lower() in COMPILED_PYTHON_EXTENSIONS]
 
         self._log(f"  Found {len(paths)} skill files in {directory}")
         results: list[SkillScanResult] = []
@@ -201,6 +234,9 @@ class SkillScanner:
             result = self.scan_file(path)
             result.skill_name = name
             results.append(result)
+
+        for path in compiled:
+            results.append(self._scan_compiled_file(path, base))
 
         return BatchScanReport(results=results)
 

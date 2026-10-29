@@ -626,6 +626,32 @@ class TestUnreadableFiles:
         assert "Permission denied" in errors[0]["error"]
 
 
+class TestCompiledPythonPayload:
+    def test_flags_pyc_without_source(self, tmp_path):
+        (tmp_path / "tool.pyc").write_bytes(b"bytecode")
+        report = SkillScanner().scan_directory(tmp_path)
+        results = {r.skill_name: r for r in report.results}
+        assert "tool.pyc" in results
+        assert results["tool.pyc"].findings
+        finding = results["tool.pyc"].findings[0]
+        assert finding.rule_id == "SG-014"
+        assert finding.severity == Severity.HIGH
+        assert "no matching tool.py" in finding.snippets[0]
+
+    def test_flags_pyc_even_with_source(self, tmp_path):
+        (tmp_path / "tool.py").write_text("print('hello')\n", encoding="utf-8")
+        (tmp_path / "tool.pyc").write_bytes(b"bytecode")
+        report = SkillScanner().scan_directory(tmp_path)
+        results = {r.skill_name: r for r in report.results}
+        assert "tool.pyc" in results
+        assert results["tool.pyc"].findings[0].severity == Severity.HIGH
+
+    def test_clean_folder_not_flagged(self, tmp_path):
+        (tmp_path / "readme.md").write_text("# hello\n", encoding="utf-8")
+        report = SkillScanner().scan_directory(tmp_path)
+        assert all(not r.findings for r in report.results)
+
+
 # ── CLI ────────────────────────────────────────────────────────
 
 
