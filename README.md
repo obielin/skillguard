@@ -4,11 +4,15 @@ Security scanner for AI agent skills. It looks for known prompt-injection, data-
 
 SkillShield is a first line of defence, not a complete one: see [Limitations](#limitations) and the [roadmap](ROADMAP.md).
 
+**Contributors welcome.** Pick an issue and comment `/assign` to claim it: [good first issues](https://github.com/obielin/skillshield/contribute) · [help wanted](https://github.com/obielin/skillshield/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) · [detection gaps](https://github.com/obielin/skillshield/issues?q=is%3Aissue+is%3Aopen+label%3Adetection-gap) · [roadmap](ROADMAP.md)
+
 [![Tests](https://img.shields.io/badge/Tests-162%20passing-brightgreen?style=flat-square)](tests/)
 [![PyPI](https://img.shields.io/pypi/v/skillshield?style=flat-square)](https://pypi.org/project/skillshield/)
 [![Dependencies](https://img.shields.io/badge/Dependencies-zero-brightgreen?style=flat-square)](pyproject.toml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)](pyproject.toml)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Good first issues](https://img.shields.io/github/issues/obielin/skillshield/good%20first%20issue?style=flat-square&label=good%20first%20issues)](https://github.com/obielin/skillshield/contribute)
+[![Help wanted](https://img.shields.io/github/issues/obielin/skillshield/help%20wanted?style=flat-square&label=help%20wanted)](https://github.com/obielin/skillshield/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 [![LinkedIn](https://img.shields.io/badge/-Linda_Oraegbunam-blue?logo=linkedin&style=flat-square)](https://www.linkedin.com/in/linda-oraegbunam/)
 
 ---

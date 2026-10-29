@@ -107,11 +107,16 @@ A PR that breaks these rules will be asked to change the samples before review c
 
 ## Claiming an issue
 
-Comment on an issue to say you are working on it, and a maintainer will assign it to you. If there is no activity for 14 days, the issue may be offered to someone else. You can always say you need more time.
+Comment `/assign` on an open issue and it is assigned to you straight away. No need to wait for a maintainer. The other commands are `/unassign` to let an issue go, and `/extend` if you need more time.
+
+How it stays fair:
+
+- **`good first issue` is for newcomers.** You can claim one if you haven't had a pull request merged here yet, one at a time. After your first merged PR, the [`help wanted`](https://github.com/obielin/skillshield/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues are yours.
+- **Up to three open claims at once** for everyone.
+- **Claims free up on their own.** After 10 days with no activity from you, you get a friendly reminder; after 14 days, the issue is released for someone else. Any comment from you counts as activity, `/extend` resets the clock, and an open pull request that mentions the issue pauses it.
+- **Tracking issues** (labelled `roadmap`) are not claimed themselves: claim one of the issues they list.
 
 A pull request on an unassigned issue is always welcome, no claim needed.
-
-`good first issue` is kept for people who have not had a PR merged here yet, so newcomers always have a way in. After your first merged PR, look at `help wanted`.
 
 ## Someone else's open pull request stays theirs
 
