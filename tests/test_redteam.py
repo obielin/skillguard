@@ -54,6 +54,8 @@ EXPECTED = {
     "27-registry-hijack": Severity.HIGH,
     "28-whitespace-inflation": Severity.CRITICAL,
     "29-description-injection": Severity.CRITICAL,
+    "30-non-english-injection": Severity.CRITICAL,
+    "31-trifecta-reworded": Severity.CRITICAL,
 }
 
 # Malicious samples not yet flagged at their expected severity: sample -> what is missing.
@@ -82,6 +84,8 @@ KNOWN_GAPS = {
     "25-remote-instructions": "fetches instructions from a URL at run time and follows them (#52)",
     "26-seed-phrase-harvest": "asks for a crypto wallet recovery phrase (#53)",
     "27-registry-hijack": "points pip or npm at an untrusted package registry (#46)",
+    "30-non-english-injection": "instruction override in a language other than English (#66)",
+    "31-trifecta-reworded": "lethal trifecta depends on the English injection phrases (#67)",
 }
 
 # Safe samples that are wrongly flagged: sample -> why it is safe.
