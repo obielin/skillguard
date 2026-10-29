@@ -125,6 +125,32 @@ test("if another claim lands first at the same time, ours is undone", async () =
   assert.match(calls.comments[0].body, /just before you/);
 });
 
+test("two claims in the same second leave exactly one claimant", () => {
+  const same = { alice: 1000, bob: 1000 };
+  // Each run asks "did the other claim first?" and must get opposite answers.
+  assert.equal(claims.claimedFirst("alice", "bob", same), true);
+  assert.equal(claims.claimedFirst("bob", "alice", same), false);
+  assert.equal(claims.claimedFirst("bob", "alice", { alice: 2000, bob: 1000 }), true);
+});
+
+test("in a same-second tie, the run for the later login undoes its claim", async () => {
+  const sameSecond = new Date(NOW).toISOString();
+  const run = (user, other) => {
+    const fake = fakeGithub({
+      afterAssign: ({ current, timelines }) => {
+        current.assignees.push({ login: other });
+        timelines[30] = [
+          { event: "assigned", assignee: { login: "alice" }, created_at: sameSecond },
+          { event: "assigned", assignee: { login: "bob" }, created_at: sameSecond },
+        ];
+      },
+    });
+    return claims.handleComment({ github: fake.github, context: ctx({ body: "/assign", user }) });
+  };
+  assert.equal(await run("alice", "bob"), "assigned");
+  assert.equal(await run("bob", "alice"), "lost-race");
+});
+
 test("claims made on two issues at once cannot exceed the limit", async () => {
   const two = [{ number: 1, labels: [] }, { number: 2, labels: [] }];
   const { github, calls } = fakeGithub({
@@ -199,6 +225,18 @@ test("a reminder for one assignee, or a copied marker, does not count for anothe
     },
   });
   assert.deepEqual(await claims.releaseStale({ github, context: ctx(), now: NOW }), [{ issue: 1, user: "bob", action: "reminded" }]);
+});
+
+test("a comment made while the release job runs keeps the claim", async () => {
+  let reads = 0;
+  const { github, calls } = fakeGithub({ staleIssues: [staleIssue(1, "newbie")] });
+  github.paginate = async (fn) => {
+    if (fn === "listForRepo") return [staleIssue(1, "newbie")];
+    reads += 1;
+    return reads === 1 ? [assigned("newbie", 20)] : [assigned("newbie", 20), commented("newbie", 0)];
+  };
+  assert.deepEqual(await claims.releaseStale({ github, context: ctx(), now: NOW }), []);
+  assert.deepEqual(calls.removed, []);
 });
 
 test("a recent comment, an open PR, the maintainer or a roadmap issue keeps the claim", async () => {

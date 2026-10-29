@@ -57,6 +57,15 @@ async function assignedAt(github, owner, repo, number) {
   return at;
 }
 
+// Whether `a` claimed before `b`. Timeline times have one-second resolution,
+// so two claims in the same second are ordered by login, giving every run the
+// same answer and leaving exactly one claimant.
+function claimedFirst(a, b, at) {
+  const ta = at[a] || 0;
+  const tb = at[b] || 0;
+  return ta < tb || (ta === tb && a < b);
+}
+
 async function searchCount(github, q) {
   const { data } = await github.rest.search.issuesAndPullRequests({ q, per_page: 1 });
   return data.total_count;
@@ -156,7 +165,7 @@ async function handleComment({ github, context }) {
   };
   const at = await assignedAt(github, owner, repo, number);
   const others = (data.assignees || []).map((a) => a.login).filter((l) => l !== user && l !== owner);
-  if (others.some((l) => (at[l] || 0) <= (at[user] || Infinity))) {
+  if (others.some((l) => claimedFirst(l, user, at))) {
     return undo("someone claimed this issue just before you, so it stays with them. Have a look at the [other open issues](" + contributeUrl + ").", "lost-race");
   }
   const nowClaimed = await openClaims(github, owner, repo, user);
@@ -226,6 +235,12 @@ async function releaseStale({ github, context, now = Date.now() }) {
       if (!last) continue;
       const idleDays = (now - last) / DAY_MS;
       if (idleDays >= RELEASE_AFTER_DAYS) {
+        // Re-read just before acting, in case the assignee commented or used
+        // /extend since the timeline above was fetched.
+        const fresh = await github.paginate(github.rest.issues.listEventsForTimeline, {
+          owner, repo, issue_number: issue.number, per_page: 100,
+        });
+        if ((now - lastActivity(fresh, login)) / DAY_MS < RELEASE_AFTER_DAYS || hasOpenLinkedPr(fresh)) continue;
         await github.rest.issues.removeAssignees({ owner, repo, issue_number: issue.number, assignees: [login] });
         await reply(github, owner, repo, issue.number, `@${login} there's been no activity here for ${RELEASE_AFTER_DAYS} days, so this issue is released for someone else. Thank you for your interest: if you'd like to pick it back up, comment \`/assign\` while it's still free.`);
         actions.push({ issue: issue.number, user: login, action: "released" });
@@ -238,4 +253,4 @@ async function releaseStale({ github, context, now = Date.now() }) {
   return actions;
 }
 
-module.exports = { handleComment, releaseStale, parseCommand, lastActivity, hasOpenLinkedPr, reminderMarker };
+module.exports = { handleComment, releaseStale, parseCommand, lastActivity, hasOpenLinkedPr, reminderMarker, claimedFirst };
